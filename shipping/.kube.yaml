@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shipping
+  labels:
+    app: shipping
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 2
+  selector:
+    matchLabels:
+      app: shipping
+  template:
+    metadata:
+      labels:
+        app: shipping
+    spec:
+      containers:
+        - name: shipping
+          readinessProbe:
+            exec:
+              command: ["/bin/grpc_health_probe", "-addr=:50053"]
+          livenessProbe:
+            exec:
+              command: ["/bin/grpc_health_probe", "-addr=:50053"]
+          image: soeirosantos/alts-shipping:v2
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          ports:
+            - name: grpc
+              containerPort: 50053
+              protocol: TCP
+---
+# shipping.checkout.svc.cluster.local
+apiVersion: v1
+kind: Service
+metadata:
+  name: shipping
+spec:
+  ports:
+    - port: 50053
+      protocol: TCP
+      targetPort: 50053
+  selector:
+    app: shipping

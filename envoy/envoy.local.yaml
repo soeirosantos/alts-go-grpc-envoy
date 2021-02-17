@@ -1,0 +1,81 @@
+admin:
+  access_log_path: "/tmp/admin-access.log"
+  address:
+    socket_address: { address: 0.0.0.0, port_value: 9901 }
+static_resources:
+  listeners:
+    - address:
+        socket_address: { address: 0.0.0.0, port_value: 9902 }
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: egress_http
+                codec_type: auto
+                route_config:
+                  name: payment_service_route
+                  virtual_hosts:
+                    - name: payment-service
+                      domains:
+                        - "*"
+                      routes:
+                        - match:
+                            prefix: "/pb.PaymentService/Charge"
+                          route: { cluster: payment }
+                http_filters:
+                  - name: envoy.filters.http.router
+                    typed_config: {}
+    - address:
+        socket_address: { address: 0.0.0.0, port_value: 9903 }
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: egress_http
+                codec_type: auto
+                route_config:
+                  name: shipping_service_route
+                  virtual_hosts:
+                    - name: shipping-service
+                      domains:
+                        - "*"
+                      routes:
+                        - match:
+                            prefix: "/pb.ShippingService/ShipOrder"
+                          route: { cluster: shipping }
+                http_filters:
+                  - name: envoy.filters.http.router
+                    typed_config: {}
+  clusters:
+   - name: payment
+     type: STRICT_DNS
+     connect_timeout: 0.25s
+     dns_refresh_rate: 1s
+     http2_protocol_options: {}
+     lb_policy: ROUND_ROBIN
+     load_assignment:
+       cluster_name: payment
+       endpoints:
+       - lb_endpoints:
+         - endpoint:
+             address:
+               socket_address:
+                 address: host.docker.internal
+                 port_value: 50052
+   - name: shipping
+     type: STRICT_DNS
+     connect_timeout: 0.25s
+     dns_refresh_rate: 1s
+     http2_protocol_options: {}
+     lb_policy: ROUND_ROBIN
+     load_assignment:
+       cluster_name: shipping
+       endpoints:
+       - lb_endpoints:
+         - endpoint:
+             address:
+               socket_address:
+                 address: host.docker.internal
+                 port_value: 50053

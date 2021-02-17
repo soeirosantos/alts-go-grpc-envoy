@@ -1,0 +1,94 @@
+syntax = "proto3";
+
+// This proto definition is shamelessly inspired from: https://github.com/GoogleCloudPlatform/microservices-demo/blob/master/pb/demo.proto
+
+package pb;
+
+option go_package = "checkout/pb";
+
+// -------- service
+
+service ShippingService {
+    rpc ShipOrder(ShipOrderRequest) returns (ShipOrderResponse) {}
+}
+
+message ShipOrderRequest {
+    Address address = 1;
+    repeated CartItem items = 2;
+}
+
+message ShipOrderResponse {
+    string tracking_id = 1;
+}
+
+
+service PaymentService {
+    rpc Charge(ChargeRequest) returns (ChargeResponse) {}
+}
+
+message ChargeRequest {
+    Money amount = 1;
+    CreditCardInfo credit_card = 2;
+}
+
+message ChargeResponse {
+    string transaction_id = 1;
+}
+
+service CheckoutService {
+    rpc PlaceOrder(PlaceOrderRequest) returns (PlaceOrderResponse) {}
+}
+
+message PlaceOrderRequest {
+    string user_id = 1;
+    string user_currency = 2;
+
+    Address address = 3;
+    string email = 5;
+    CreditCardInfo credit_card = 6;
+}
+
+message PlaceOrderResponse {
+    OrderResult order = 1;
+}
+
+// -------- domain
+
+message CartItem {
+    string product_id = 1;
+    int32  quantity = 2;
+}
+
+message OrderItem {
+    CartItem item = 1;
+    Money cost = 2;
+}
+
+message OrderResult {
+    string   order_id = 1;
+    string   shipping_tracking_id = 2;
+    Money shipping_cost = 3;
+    Address  shipping_address = 4;
+    repeated OrderItem items = 5;
+}
+
+message Money {
+    string currency_code = 1;
+    int64 units = 2;
+    int32 nanos = 3;
+}
+
+message Address {
+    string street_address = 1;
+    string city = 2;
+    string state = 3;
+    string country = 4;
+    int32 zip_code = 5;
+}
+
+message CreditCardInfo {
+    string credit_card_number = 1;
+    int32 credit_card_cvv = 2;
+    int32 credit_card_expiration_year = 3;
+    int32 credit_card_expiration_month = 4;
+}

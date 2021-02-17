@@ -1,0 +1,9 @@
+notes
+/logs
+.protoc
+client/client
+checkout/checkout
+shipping/shipping
+payment/payment
+.idea
+*/.idea
